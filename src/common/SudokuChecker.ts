@@ -35,7 +35,6 @@ export class SudokuChecker {
             }
         }
 
-
         return false;
     }
 
@@ -126,8 +125,9 @@ export class SudokuChecker {
     }
 
     // TODO将最后的结果转化成适合展示的数组，考虑逆转操作
-    public static transformArr(grid: number[][]): number[][] {
+    public static transformArr(grid: number[][], PermutationTable: number[][]): number[][] {
         let res = new Array(9).fill(null).map(() => new Array(9).fill(0));
+        // let res = [9][9];
 
         let flag = 0;
         // let maxRow = 3 * (i + 1);
@@ -151,7 +151,7 @@ export class SudokuChecker {
                 for (let m = minRow; m < maxRow; m++) {
                     for (let n = minRow; n < maxRow; n++) {
                         res[row][col] = grid[m][n + pos * 3 - flag * 3];
-                        // console.log(m + 1, n + pos * 3 + 1 - flag * 3, row + 1, col + 1);
+                        console.log(m + 1, n + pos * 3 + 1 - flag * 3, row + 1, col + 1);
                         if (col == 8) {
                             col = 0;
                             row++;

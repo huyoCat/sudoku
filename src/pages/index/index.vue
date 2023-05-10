@@ -3,7 +3,7 @@
         <view class="first-wrapper">
             <!-- 难度 分数 -->
             <view class="sudoku-top">
-                <view>新游戏</view>
+                <view @click="resetSudoku">新游戏</view>
                 <view class="sudoku-info">
                     <view>等级</view>
                     <view>计时</view>
@@ -12,21 +12,46 @@
             <!-- 数独框 -->
             <view class="sudoku-wrapper">
                 <view v-for="i in x" :key="i" class="big-box-wrapper">
-                    <view v-for="j in y" :key="j" class="small-box-wrapper">
-
+                    <view
+                        v-for="j in y"
+                        :key="j"
+                        class="small-box-wrapper"
+                        :class="[
+                            StyleBox[i - 1][j - 1] === 'default'
+                                ? 'default-box'
+                                : '',
+                                StyleBox[i - 1][j - 1] === 'spectrum'
+                                ? 'spectrum-box'
+                                : '',
+                                StyleBox[i - 1][j - 1] === 'target'
+                                ? 'target-box'
+                                : '',
+                        ]"
+                        @click="selectBox(i, j)"
+                    >
                         <!-- {{ i }}  {{ j }} -->
-                        {{ sudoku[i - 1][j - 1] == 0?'':sudoku[i - 1][j - 1] }}
+                        {{
+                            ResSudoku[i - 1][j - 1] == 0
+                                ? ""
+                                : ResSudoku[i - 1][j - 1]
+                        }}
                     </view>
                 </view>
             </view>
             <!-- 操作 -->
             <view class="opt-wrapper">
-                <view><text class="iconfont icon-wrapper">&#xe60a;</text><text>撤回</text></view>
-                <view><text class="iconfont icon-wrapper">&#xe829;</text><text>擦除</text></view>
-                <view><text class="iconfont icon-wrapper">&#xe609;</text><text>重置</text></view>
-                
-               
-                
+                <view
+                    ><text class="iconfont icon-wrapper">&#xe60a;</text
+                    ><text>撤回</text></view
+                >
+                <view
+                    ><text class="iconfont icon-wrapper">&#xe829;</text
+                    ><text>擦除</text></view
+                >
+                <view
+                    ><text class="iconfont icon-wrapper">&#xe609;</text
+                    ><text>重置</text></view
+                >
             </view>
 
             <!-- 数字框 -->
@@ -41,34 +66,72 @@
 
 <script setup lang="ts">
 import "@/static/iconfont/sudoku.css";
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 import { Sudoku } from "@/common/Sudoku";
-import { SudokuGenerator } from "@/common/gpt";
 import { SudokuChecker } from "@/common/SudokuChecker";
 
-const level = ref("");
-const totalcount = ref(0);
-const errorCount = ref(0);
 const x = ref(9);
 const y = ref(9);
 
-// const generator = new SudokuGenerator();
-// generator.generate();
-// generator.printBoard();
+let DisplaySudoku = ref([reactive([0])]); //--展示用
+let ResSudoku = ref([reactive([0])]); //--记录用户答案
 
-const Board = new Sudoku();
-Board.generate();
-const SudokuList = Board.printBoard();
-console.log(SudokuList);
+/* 设置控制格子样式的二维数组  
+--target代表目标格子 
+--spectrum代表属于考虑范围的格子  
+--default代表默认格子 
+--空代表不可填写的格子
+*/
+let StyleBox = ref([reactive([""])]); //--样式数组
 
-// 矩阵至少应保留17个数字，以确保有唯一解
-const question=SudokuChecker.getSudoku(SudokuList,59);
+let PermutationTable:number[][]=[];
 
-console.log(question,"删除后的结果")
-let sudoku=SudokuChecker.transformArr(question);
 
-console.log(sudoku)
+// 初始化数独
+resetSudoku();
 
+// 初始化数独
+function resetSudoku() {
+    const Board = new Sudoku();
+    Board.generate();
+    const SudokuList = Board.printBoard();
+    console.log(SudokuList, "初始数独");
+
+    // 矩阵至少应保留17个数字，以确保有唯一解--事实证明63也没有唯一解
+    const question = SudokuChecker.getSudoku(SudokuList, 59);
+
+    console.log(question, "删除后的结果");
+    let sudoku = SudokuChecker.transformArr(question,PermutationTable);
+
+    console.log(sudoku, "转置后的结果");
+    DisplaySudoku.value = sudoku;
+
+    // 将题目同步至结果数独
+    ResSudoku.value = sudoku;
+
+    // 初始化样式格子
+    for (let i = 0; i < 9; i++) {
+        StyleBox.value[i] = reactive([""]);
+        for (let j = 0; j < 9; j++) {
+            StyleBox.value[i][j] = ResSudoku.value[i][j] === 0 ? "default" : "";
+            // StyleBox.value[i][j] = "";
+        }
+    }
+}
+
+// 用户选择格子
+function selectBox(i: number, j: number) {
+    console.log("进入格子选择", i, j);
+    // UI 格子颜色改变 TODO重置之前的格子颜色
+    StyleBox.value[i][j] = "target";
+    // TODO计算范围格子
+
+    // 获取坐标
+    console.log(i, j);
+
+    // 点击后记录用户输入TODO坐标需要重新计算
+    ResSudoku.value[i][j] = 10;
+}
 
 // Logical.randomList();
 
@@ -77,12 +140,10 @@ console.log(sudoku)
 2.存储用户的操作步骤（包括擦除），以便撤回
 3.提交答案后进行验证，错误地方需高亮？（待定）
 */
-
 </script>
 
 <style lang="less">
-
-@topicColor:rgba(110, 134, 180, 1);
+@topicColor: rgba(110, 134, 180, 1);
 
 .content-wrapper {
     width: 100dvw;
@@ -98,7 +159,7 @@ console.log(sudoku)
     }
 }
 
-.sudoku-top{
+.sudoku-top {
     // position: absolute;
     margin-bottom: -300rpx;
     width: 85dvw;
@@ -108,14 +169,13 @@ console.log(sudoku)
     padding: 60rpx 60rpx 40rpx 60rpx;
     font-size: 30rpx;
     color: #fff;
-    
 
-    >:first-child{
+    > :first-child {
         font-weight: bold;
         margin: -5rpx;
     }
 
-    .sudoku-info{
+    .sudoku-info {
         margin-top: 20rpx;
         display: flex;
         font-size: 25rpx;
@@ -172,10 +232,10 @@ console.log(sudoku)
         margin: 0 15rpx;
     }
 
-    view{
+    view {
         // display: flex;
 
-        text{
+        text {
             display: block;
             text-align: center;
             margin-top: 5rpx;
@@ -197,5 +257,17 @@ console.log(sudoku)
         margin: 8rpx;
         border-radius: 18rpx;
     }
+}
+
+.target-box {
+    background-color: rgba(227, 244, 251, 1);
+}
+
+.spectrum-box {
+    background-color: rgba(239, 242, 247, 1);
+}
+
+.default-box {
+    background-color: rgba(248, 248, 248, 1);
 }
 </style>
